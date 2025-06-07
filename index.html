@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mưa Deadline</title>
+  <title>Deadline Rain</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
-      background: black;
-      color: #00ff00;
-      font-family: monospace;
+      background-color: black;
     }
 
     canvas {
       display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     #qrcode {
@@ -23,59 +24,137 @@
       right: 10px;
       background: white;
       padding: 10px;
+      z-index: 10;
     }
 
-    h1 {
+    #message {
       position: absolute;
-      top: 20px;
-      left: 20px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       color: white;
-      font-size: 2rem;
-      z-index: 1;
+      font-size: 3em;
+      font-weight: bold;
+      z-index: 11;
+      display: none;
+      text-shadow: 2px 2px 5px #000;
     }
   </style>
 </head>
 <body>
-  <h1>Mưa chữ "deadline"</h1>
-  <canvas id="matrix"></canvas>
+  <canvas id="rainCanvas"></canvas>
+  <canvas id="fireworkCanvas"></canvas>
   <div id="qrcode"></div>
+  <div id="message">🎉 Chúc bạn trúng deadline! 🎉</div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    // Canvas Matrix Rain
-    const canvas = document.getElementById("matrix");
-    const ctx = canvas.getContext("2d");
+    const url = "https://tandath.github.io/DEADLINE/"; // 🔁 sửa thành URL thật sau khi bạn host
+    QRCode.toCanvas(document.getElementById('qrcode'), url, { width: 120 }, console.error);
 
-    canvas.height = window.innerHeight;
-    canvas.width = window.innerWidth;
+    // ========== Hiệu ứng mưa chữ ==========
+    const rainCanvas = document.getElementById("rainCanvas");
+    const ctx = rainCanvas.getContext("2d");
 
-    const columns = Math.floor(canvas.width / 100);
+    rainCanvas.width = window.innerWidth;
+    rainCanvas.height = window.innerHeight;
+
+    const columns = Math.floor(rainCanvas.width / 100);
     const drops = Array(columns).fill(1);
+    const getRandomColor = () => `hsl(${Math.random() * 360}, 100%, 50%)`;
 
-    function draw() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "#0F0";
+    function drawRain() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+      ctx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
       ctx.font = "20px monospace";
 
       for (let i = 0; i < drops.length; i++) {
         const text = "deadline";
+        ctx.fillStyle = getRandomColor();
         ctx.fillText(text, i * 100, drops[i] * 20);
-        if (drops[i] * 20 > canvas.height && Math.random() > 0.975) {
+
+        if (drops[i] * 20 > rainCanvas.height && Math.random() > 0.975) {
           drops[i] = 0;
         }
         drops[i]++;
       }
     }
 
-    setInterval(draw, 33);
+    setInterval(drawRain, 33);
+  </script>
 
-    // QR code generation
-    const yourURL = "https://tandath.github.io/DEADLINE/"; // <-- thay bằng link thật của bạn
-    QRCode.toCanvas(document.getElementById('qrcode'), yourURL, { width: 150 }, function (error) {
-      if (error) console.error(error);
-    });
+  <script>
+    // ========== Hiệu ứng pháo hoa ==========
+    const fireCanvas = document.getElementById("fireworkCanvas");
+    const fctx = fireCanvas.getContext("2d");
+    fireCanvas.width = window.innerWidth;
+    fireCanvas.height = window.innerHeight;
+
+    const fireworks = [];
+
+    class Firework {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.particles = [];
+
+        for (let i = 0; i < 100; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const speed = Math.random() * 5 + 2;
+          this.particles.push({
+            x: this.x,
+            y: this.y,
+            dx: Math.cos(angle) * speed,
+            dy: Math.sin(angle) * speed,
+            life: 100,
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`
+          });
+        }
+      }
+
+      update() {
+        this.particles.forEach(p => {
+          p.x += p.dx;
+          p.y += p.dy;
+          p.dy += 0.05; // gravity
+          p.life--;
+        });
+        this.particles = this.particles.filter(p => p.life > 0);
+      }
+
+      draw(ctx) {
+        this.particles.forEach(p => {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, 2, 2);
+        });
+      }
+    }
+
+    function animateFireworks() {
+      fctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+      fctx.fillRect(0, 0, fireCanvas.width, fireCanvas.height);
+
+      fireworks.forEach(f => {
+        f.update();
+        f.draw(fctx);
+      });
+
+      requestAnimationFrame(animateFireworks);
+    }
+
+    function launchFirework() {
+      const x = Math.random() * fireCanvas.width;
+      const y = Math.random() * fireCanvas.height / 2;
+      fireworks.push(new Firework(x, y));
+    }
+
+    // Bắt đầu sau 15s
+    setTimeout(() => {
+      document.getElementById("message").style.display = "block";
+      setInterval(launchFirework, 500);
+    }, 15000);
+
+    animateFireworks();
   </script>
 </body>
 </html>
