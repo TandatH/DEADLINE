@@ -1,160 +1,2083 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Deadline Rain</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: black;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart School Pro - Hệ Thống Quản Lý Giáo Dục</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    canvas {
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
+    <style>
+        :root {
+            --primary: #2563eb; 
+            --secondary: #64748b; 
+            --success: #16a34a;
+            --warning: #d97706; 
+            --danger: #dc2626; 
+            --bg-light: #f1f5f9;
+            --sidebar-w: 260px;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        body { 
+            background: var(--bg-light); 
+            height: 100vh; 
+            overflow: hidden; 
+            font-size: 14px; 
+        }
 
-    #qrcode {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: white;
-      padding: 10px;
-      z-index: 10;
-    }
+        /* --- LAYOUT --- */
+        #app-container { 
+            display: flex; 
+            height: 100vh; 
+            position: relative;
+        }
+        
+        .sidebar { 
+            width: var(--sidebar-w); 
+            background: #1e293b; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .brand { 
+            padding: 1.5rem; 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            border-bottom: 1px solid #334155; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            justify-content: space-between;
+        }
+        
+        .menu { 
+            flex: 1; 
+            padding: 1rem 0; 
+            overflow-y: auto; 
+        }
+        
+        .menu-item { 
+            padding: 0.8rem 1.5rem; 
+            cursor: pointer; 
+            color: #94a3b8; 
+            display: flex; 
+            align-items: center; 
+            transition: 0.2s; 
+            gap: 12px;
+            white-space: nowrap;
+        }
+        
+        .menu-item:hover, .menu-item.active { 
+            background: #334155; 
+            color: white; 
+            border-right: 4px solid var(--primary); 
+        }
+        
+        .main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            background: #f8fafc; 
+        }
+        
+        .top-bar { 
+            background: white; 
+            padding: 1rem 1.5rem; 
+            border-bottom: 1px solid #e2e8f0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .content-area { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+        }
 
-    #message {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 3em;
-      font-weight: bold;
-      z-index: 11;
-      display: none;
-      text-shadow: 2px 2px 5px #000;
-    }
-  </style>
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .sidebar-close {
+            display: none;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, #1e3a8a, #2563eb); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999;
+            padding: 20px;
+        }
+        
+        .auth-card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); 
+            text-align: center; 
+        }
+        
+        .auth-inp { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .btn-auth { 
+            width: 100%; 
+            padding: 12px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-auth:hover { 
+            opacity: 0.9; 
+        }
+        
+        .hidden { 
+            display: none !important; 
+        }
+
+        /* --- UI COMPONENTS --- */
+        .btn { 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-weight: 500; 
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn:hover { 
+            opacity: 0.9; 
+            transform: translateY(-1px); 
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; color: #475569; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+        .card { 
+            background: white; 
+            border-radius: 10px; 
+            padding: 15px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            margin-bottom: 15px; 
+        }
+        
+        .grid-4 { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+        }
+        
+        .grid-3 { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 15px; 
+        }
+        
+        .stat-card { 
+            background: white; 
+            padding: 1.2rem; 
+            border-radius: 10px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            border-left: 4px solid var(--primary);
+            min-width: 0;
+        }
+        
+        .stat-card .value { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: #1e293b; 
+            margin-top: 5px;
+            word-break: break-word;
+        }
+
+        /* TABLE */
+        .table-wrapper { 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 800px; 
+        }
+        
+        th { 
+            background: #f1f5f9; 
+            text-align: left; 
+            padding: 12px 16px; 
+            font-weight: 600; 
+            color: #475569; 
+            border-bottom: 1px solid #e2e8f0; 
+            font-size: 0.85rem; 
+            text-transform: uppercase; 
+            white-space: nowrap; 
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td { 
+            padding: 12px 16px; 
+            border-bottom: 1px solid #e2e8f0; 
+            color: #334155; 
+            vertical-align: middle; 
+        }
+        
+        tr:hover { 
+            background: #f8fafc; 
+        }
+        
+        .avatar-sm { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 1px solid #e2e8f0; 
+        }
+        
+        .badge { 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 0.75rem; 
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+
+        /* MODAL */
+        .modal { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 2000; 
+            backdrop-filter: blur(2px);
+            padding: 10px;
+        }
+        
+        .modal-content { 
+            background: white; 
+            width: 100%; 
+            max-width: 1100px; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .modal-header { 
+            padding: 15px 20px; 
+            border-bottom: 1px solid #e2e8f0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #f8fafc;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .modal-body { 
+            padding: 20px; 
+            overflow-y: auto; 
+        }
+        
+        .form-section { 
+            margin-bottom: 20px; 
+        }
+        
+        .form-section h4 { 
+            color: var(--primary); 
+            margin-bottom: 15px; 
+            font-size: 1rem; 
+            border-left: 4px solid var(--primary); 
+            padding-left: 10px; 
+        }
+        
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+        }
+        
+        .form-group label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 500; 
+            color: #64748b; 
+            font-size: 0.85rem; 
+        }
+        
+        .form-control { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .custom-select { 
+            padding: 8px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            outline: none; 
+            background: white;
+            font-size: 14px;
+        }
+        
+        .score-input { 
+            width: 60px; 
+            text-align: center; 
+            padding: 6px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .score-input:focus { 
+            border-color: var(--primary); 
+            outline: none; 
+        }
+
+        /* Action buttons container */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* ==================== RESPONSIVE MEDIA QUERIES ==================== */
+        
+        /* Tablet */
+        @media (max-width: 1024px) {
+            .grid-4 { 
+                grid-template-columns: repeat(2, 1fr); 
+            }
+            
+            table {
+                min-width: 700px;
+            }
+            
+            .content-area {
+                padding: 12px;
+            }
+        }
+
+        /* Mobile Landscape & Portrait */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-w: 280px;
+            }
+
+            body {
+                font-size: 13px;
+            }
+
+            /* Mobile menu */
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-close {
+                display: block;
+            }
+
+            .mobile-overlay {
+                display: none;
+            }
+
+            .mobile-overlay.active {
+                display: block;
+            }
+
+            .main {
+                width: 100%;
+            }
+
+            .top-bar {
+                padding: 0.8rem 1rem;
+            }
+
+            .content-area {
+                padding: 10px;
+            }
+
+            .grid-4,
+            .grid-3 { 
+                grid-template-columns: 1fr; 
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-card .value {
+                font-size: 1.3rem;
+            }
+
+            /* Table optimization for mobile */
+            table {
+                min-width: 600px;
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            .avatar-sm {
+                width: 35px;
+                height: 35px;
+            }
+
+            /* Modal optimization */
+            .modal {
+                padding: 5px;
+            }
+
+            .modal-content {
+                max-height: 95vh;
+            }
+
+            .modal-header {
+                padding: 12px 15px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Auth card */
+            .auth-card {
+                padding: 20px;
+            }
+
+            /* Buttons */
+            .btn {
+                padding: 10px 14px;
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+
+            /* Toolbar */
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .action-buttons {
+                justify-content: flex-start;
+            }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .brand {
+                font-size: 1.1rem;
+                padding: 1rem;
+            }
+
+            .menu-item {
+                padding: 0.7rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            table {
+                min-width: 500px;
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: 6px 8px;
+            }
+
+            .stat-card .value {
+                font-size: 1.2rem;
+            }
+
+            .badge {
+                font-size: 0.7rem;
+                padding: 3px 8px;
+            }
+
+            .score-input {
+                width: 50px;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 360px) {
+            .auth-card {
+                padding: 15px;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .content-area {
+                padding: 8px;
+            }
+        }
+
+        /* Landscape orientation optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .top-bar {
+                padding: 0.5rem 1rem;
+            }
+
+            .content-area {
+                padding: 8px;
+            }
+
+            .card {
+                margin-bottom: 10px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar,
+            .top-bar,
+            .mobile-menu-toggle,
+            .btn,
+            .action-buttons {
+                display: none !important;
+            }
+
+            .main {
+                width: 100%;
+            }
+
+            .content-area {
+                padding: 0;
+            }
+
+            .card {
+                break-inside: avoid;
+            }
+        }
+    </style>
 </head>
 <body>
-  <canvas id="rainCanvas"></canvas>
-  <canvas id="fireworkCanvas"></canvas>
-  <div id="qrcode"></div>
-  <div id="message">🎉 Chúc bạn trúng deadline! 🎉</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script>
-    const url = "https://tandath.github.io/DEADLINE/"; // 🔁 sửa thành URL thật sau khi bạn host
-    QRCode.toCanvas(document.getElementById('qrcode'), url, { width: 120 }, console.error);
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h2 style="color:#1e293b; margin-bottom:5px"><i class="fas fa-school"></i> Smart School</h2>
+            <p style="color:#64748b; margin-bottom:20px">Hệ thống quản lý giáo dục</p>
 
-    // ========== Hiệu ứng mưa chữ ==========
-    const rainCanvas = document.getElementById("rainCanvas");
-    const ctx = rainCanvas.getContext("2d");
+            <div id="form-login">
+                <h3 style="margin-bottom:15px; color:var(--primary)">Đăng Nhập</h3>
+                <input type="email" id="login-email" class="auth-inp" placeholder="Email">
+                <input type="password" id="login-pass" class="auth-inp" placeholder="Mật khẩu">
+                <button class="btn-auth" onclick="handleLogin()">Đăng Nhập</button>
+                <div style="margin-top:15px; font-size:0.9rem;">
+                    Chưa có tài khoản? <a href="#" style="color:var(--primary); font-weight:600" onclick="toggleAuthMode('register'); return false;">Đăng ký ngay</a>
+                </div>
+            </div>
 
-    rainCanvas.width = window.innerWidth;
-    rainCanvas.height = window.innerHeight;
+            <div id="form-register" class="hidden">
+                <h3 style="margin-bottom:15px; color:var(--success)">Đăng Ký Mới</h3>
+                <input type="email" id="reg-email" class="auth-inp" placeholder="Email đăng ký">
+                <input type="password" id="reg-pass" class="auth-inp" placeholder="Mật khẩu (min 6 ký tự)">
+                
+                <select id="reg-role" class="auth-inp" onchange="toggleRegFields()">
+                    <option value="" disabled selected>-- Chọn vai trò --</option>
+                    <option value="parent">Phụ huynh</option>
+                    <option value="teacher">Giáo viên</option>
+                    <option value="admin">Quản trị viên (Admin)</option>
+                </select>
 
-    const columns = Math.floor(rainCanvas.width / 100);
-    const drops = Array(columns).fill(1);
-    const getRandomColor = () => `hsl(${Math.random() * 360}, 100%, 50%)`;
+                <div id="reg-extra-fields">
+                    <input type="text" id="reg-class" class="auth-inp hidden" placeholder="Lớp phụ trách (VD: 1A)">
+                    <input type="text" id="reg-student-id" class="auth-inp hidden" placeholder="Mã học sinh của con (VD: HS123)">
+                </div>
 
-    function drawRain() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-      ctx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
-      ctx.font = "20px monospace";
+                <button class="btn-auth" onclick="handleRegister()">Đăng Ký</button>
+                <div style="margin-top:15px; font-size:0.9rem;">
+                    Đã có tài khoản? <a href="#" style="color:var(--primary); font-weight:600" onclick="toggleAuthMode('login'); return false;">Đăng nhập</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-      for (let i = 0; i < drops.length; i++) {
-        const text = "deadline";
-        ctx.fillStyle = getRandomColor();
-        ctx.fillText(text, i * 100, drops[i] * 20);
+    <!-- MAIN APP -->
+    <div id="app-container" class="hidden">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
 
-        if (drops[i] * 20 > rainCanvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
-    }
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="brand">
+                <div>
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Smart School</span>
+                </div>
+                <button class="sidebar-close" onclick="toggleMobileMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="menu" id="menu">
+                <!-- Menu items will be injected here -->
+            </div>
+        </div>
 
-    setInterval(drawRain, 33);
-  </script>
+        <!-- MAIN CONTENT -->
+        <div class="main">
+            <div class="top-bar">
+                <div style="display:flex; align-items:center; gap:15px">
+                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 style="color:#1e293b; font-size:1.2rem; margin:0" id="page-title">Dashboard</h2>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap">
+                    <span style="color:#64748b; font-size:0.9rem" id="user-info">User</span>
+                    <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">Đăng xuất</span>
+                    </button>
+                </div>
+            </div>
 
-  <script>
-    // ========== Hiệu ứng pháo hoa ==========
-    const fireCanvas = document.getElementById("fireworkCanvas");
-    const fctx = fireCanvas.getContext("2d");
-    fireCanvas.width = window.innerWidth;
-    fireCanvas.height = window.innerHeight;
+            <div class="content-area" id="content-area">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
 
-    const fireworks = [];
+    <!-- MODALS -->
+    <!-- Student Form Modal -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-student-title">Thêm Học Sinh Mới</h3>
+                <button class="btn btn-outline btn-sm" onclick="closeModal('studentModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="studentForm" onsubmit="saveStudent(event)">
+                    <input type="hidden" id="student-id">
+                    
+                    <div class="form-section">
+                        <h4><i class="fas fa-user"></i> Thông tin cơ bản</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Mã học sinh *</label>
+                                <input type="text" id="student-code" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Họ và tên *</label>
+                                <input type="text" id="student-name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Ngày sinh *</label>
+                                <input type="date" id="student-dob" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Giới tính *</label>
+                                <select id="student-gender" class="form-control" required>
+                                    <option value="">-- Chọn --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Lớp *</label>
+                                <input type="text" id="student-class" class="form-control" required placeholder="VD: 1A, 2B">
+                            </div>
+                            <div class="form-group">
+                                <label>Địa chỉ</label>
+                                <input type="text" id="student-address" class="form-control">
+                            </div>
+                        </div>
+                    </div>
 
-    class Firework {
-      constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.particles = [];
+                    <div class="form-section">
+                        <h4><i class="fas fa-phone"></i> Thông tin liên hệ</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Tên phụ huynh</label>
+                                <input type="text" id="student-parent" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Số điện thoại</label>
+                                <input type="tel" id="student-phone" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="student-email" class="form-control">
+                            </div>
+                        </div>
+                    </div>
 
-        for (let i = 0; i < 100; i++) {
-          const angle = Math.random() * 2 * Math.PI;
-          const speed = Math.random() * 5 + 2;
-          this.particles.push({
-            x: this.x,
-            y: this.y,
-            dx: Math.cos(angle) * speed,
-            dy: Math.sin(angle) * speed,
-            life: 100,
-            color: `hsl(${Math.random() * 360}, 100%, 50%)`
-          });
-        }
-      }
+                    <div class="form-section">
+                        <h4><i class="fas fa-chart-line"></i> Điểm số</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Toán</label>
+                                <input type="number" id="student-math" class="form-control" min="0" max="10" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label>Văn</label>
+                                <input type="number" id="student-literature" class="form-control" min="0" max="10" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label>Anh</label>
+                                <input type="number" id="student-english" class="form-control" min="0" max="10" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label>Khoa học</label>
+                                <input type="number" id="student-science" class="form-control" min="0" max="10" step="0.1">
+                            </div>
+                        </div>
+                    </div>
 
-      update() {
-        this.particles.forEach(p => {
-          p.x += p.dx;
-          p.y += p.dy;
-          p.dy += 0.05; // gravity
-          p.life--;
+                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px; flex-wrap:wrap">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('studentModal')">
+                            <i class="fas fa-times"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Thêm Giao Dịch Mới</h3>
+                <button class="btn btn-outline btn-sm" onclick="closeModal('transactionModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm" onsubmit="saveTransaction(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Học sinh *</label>
+                            <select id="trans-student" class="form-control" required>
+                                <option value="">-- Chọn học sinh --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Loại giao dịch *</label>
+                            <select id="trans-type" class="form-control" required>
+                                <option value="tuition">Học phí</option>
+                                <option value="uniform">Đồng phục</option>
+                                <option value="books">Sách vở</option>
+                                <option value="activities">Hoạt động ngoại khóa</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Số tiền (VNĐ) *</label>
+                            <input type="number" id="trans-amount" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày giao dịch *</label>
+                            <input type="date" id="trans-date" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Ghi chú</label>
+                            <textarea id="trans-note" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px; flex-wrap:wrap">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('transactionModal')">
+                            <i class="fas fa-times"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } 
+            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLF_Q3cVvqf5z1F9sZ8gQvnJvX7K8mR2E",
+            authDomain: "smart-school-demo.firebaseapp.com",
+            databaseURL: "https://smart-school-demo-default-rtdb.firebaseio.com",
+            projectId: "smart-school-demo",
+            storageBucket: "smart-school-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        window.auth = auth;
+        window.db = db;
+        window.dbRef = ref;
+        window.dbSet = set;
+        window.dbPush = push;
+        window.dbOnValue = onValue;
+        window.dbUpdate = update;
+        window.dbRemove = remove;
+
+        // AUTH STATE LISTENER
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUser = user;
+                loadUserRole(user.uid);
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            }
         });
-        this.particles = this.particles.filter(p => p.life > 0);
-      }
 
-      draw(ctx) {
-        this.particles.forEach(p => {
-          ctx.fillStyle = p.color;
-          ctx.fillRect(p.x, p.y, 2, 2);
-        });
-      }
-    }
+        // Load user role
+        window.loadUserRole = (uid) => {
+            onValue(ref(db, `users/${uid}`), (snapshot) => {
+                const userData = snapshot.val();
+                if (userData) {
+                    window.userRole = userData.role;
+                    window.teacherClass = userData.teacherClass || null;
+                    window.studentCode = userData.studentCode || null;
+                    
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('user-info').textContent = window.currentUser.email;
+                    
+                    renderMenu();
+                    loadData();
+                } else {
+                    Swal.fire('Lỗi', 'Không tìm thấy thông tin người dùng', 'error');
+                    handleLogout();
+                }
+            });
+        };
 
-    function animateFireworks() {
-      fctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-      fctx.fillRect(0, 0, fireCanvas.width, fireCanvas.height);
+        // Load all data
+        window.loadData = () => {
+            window.localData = { students: {}, transactions: {}, feedback: {} };
+            
+            onValue(ref(db, 'students'), (snapshot) => {
+                window.localData.students = snapshot.val() || {};
+                renderCurrentPage();
+            });
+            
+            onValue(ref(db, 'transactions'), (snapshot) => {
+                window.localData.transactions = snapshot.val() || {};
+                renderCurrentPage();
+            });
 
-      fireworks.forEach(f => {
-        f.update();
-        f.draw(fctx);
-      });
+            onValue(ref(db, 'feedback'), (snapshot) => {
+                window.localData.feedback = snapshot.val() || {};
+                renderCurrentPage();
+            });
+        };
+    </script>
 
-      requestAnimationFrame(animateFireworks);
-    }
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
 
-    function launchFirework() {
-      const x = Math.random() * fireCanvas.width;
-      const y = Math.random() * fireCanvas.height / 2;
-      fireworks.push(new Firework(x, y));
-    }
+        // Close mobile menu when clicking on menu item
+        function closeMobileMenuOnClick() {
+            if (window.innerWidth <= 768) {
+                toggleMobileMenu();
+            }
+        }
 
-    // Bắt đầu sau 15s
-    setTimeout(() => {
-      document.getElementById("message").style.display = "block";
-      setInterval(launchFirework, 500);
-    }, 15000);
+        // AUTH FUNCTIONS
+        window.toggleAuthMode = (mode) => {
+            if (mode === 'register') {
+                document.getElementById('form-login').classList.add('hidden');
+                document.getElementById('form-register').classList.remove('hidden');
+            } else {
+                document.getElementById('form-register').classList.add('hidden');
+                document.getElementById('form-login').classList.remove('hidden');
+            }
+        };
 
-    animateFireworks();
-  </script>
+        window.toggleRegFields = () => {
+            const role = document.getElementById('reg-role').value;
+            const classField = document.getElementById('reg-class');
+            const studentIdField = document.getElementById('reg-student-id');
+            
+            classField.classList.add('hidden');
+            studentIdField.classList.add('hidden');
+            
+            if (role === 'teacher') {
+                classField.classList.remove('hidden');
+            } else if (role === 'parent') {
+                studentIdField.classList.remove('hidden');
+            }
+        };
+
+        window.handleLogin = async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-pass').value;
+
+            if (!email || !password) {
+                Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ thông tin', 'error');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đăng nhập thành công!',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                Swal.fire('Lỗi', 'Email hoặc mật khẩu không đúng', 'error');
+            }
+        };
+
+        window.handleRegister = async () => {
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-pass').value;
+            const role = document.getElementById('reg-role').value;
+
+            if (!email || !password || !role) {
+                Swal.fire('Lỗi', 'Vui lòng điền đầy đủ thông tin', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                Swal.fire('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự', 'error');
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const userData = { role, email };
+                
+                if (role === 'teacher') {
+                    const teacherClass = document.getElementById('reg-class').value.trim();
+                    if (!teacherClass) {
+                        Swal.fire('Lỗi', 'Vui lòng nhập lớp phụ trách', 'error');
+                        return;
+                    }
+                    userData.teacherClass = teacherClass;
+                } else if (role === 'parent') {
+                    const studentCode = document.getElementById('reg-student-id').value.trim();
+                    if (!studentCode) {
+                        Swal.fire('Lỗi', 'Vui lòng nhập mã học sinh', 'error');
+                        return;
+                    }
+                    userData.studentCode = studentCode;
+                }
+
+                await set(dbRef(db, `users/${user.uid}`), userData);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đăng ký thành công!',
+                    text: 'Bạn sẽ được chuyển đến trang chủ',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                let errorMsg = 'Đã xảy ra lỗi';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Email đã được sử dụng';
+                }
+                Swal.fire('Lỗi', errorMsg, 'error');
+            }
+        };
+
+        window.handleLogout = async () => {
+            const result = await Swal.fire({
+                title: 'Xác nhận đăng xuất?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đăng xuất',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                await signOut(auth);
+                window.location.reload();
+            }
+        };
+
+        // MENU RENDERING
+        window.currentPage = 'dashboard';
+
+        window.renderMenu = () => {
+            const role = window.userRole;
+            let menuItems = [];
+
+            if (role === 'admin') {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fa-chart-line', text: 'Tổng Quan', page: 'dashboard' },
+                    { id: 'students', icon: 'fa-users', text: 'Học Sinh', page: 'students' },
+                    { id: 'scores', icon: 'fa-chart-bar', text: 'Điểm Số', page: 'scores' },
+                    { id: 'finance', icon: 'fa-dollar-sign', text: 'Tài Chính', page: 'finance' }
+                ];
+            } else if (role === 'teacher') {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fa-chart-line', text: 'Tổng Quan', page: 'dashboard' },
+                    { id: 'students', icon: 'fa-users', text: 'Học Sinh', page: 'students' },
+                    { id: 'scores', icon: 'fa-chart-bar', text: 'Điểm Số', page: 'scores' }
+                ];
+            } else if (role === 'parent') {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fa-chart-line', text: 'Tổng Quan', page: 'dashboard' },
+                    { id: 'my-student', icon: 'fa-user-graduate', text: 'Con Tôi', page: 'my-student' }
+                ];
+            }
+
+            const menuHTML = menuItems.map(item => `
+                <div class="menu-item ${item.page === currentPage ? 'active' : ''}" 
+                     onclick="navigateTo('${item.page}'); closeMobileMenuOnClick()">
+                    <i class="fas ${item.icon}"></i>
+                    <span>${item.text}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('menu').innerHTML = menuHTML;
+        };
+
+        window.navigateTo = (page) => {
+            window.currentPage = page;
+            renderMenu();
+            renderCurrentPage();
+        };
+
+        window.renderCurrentPage = () => {
+            const pages = {
+                'dashboard': renderDashboard,
+                'students': renderStudents,
+                'scores': renderScores,
+                'finance': renderFinance,
+                'my-student': renderMyStudent
+            };
+
+            const pageTitles = {
+                'dashboard': 'Tổng Quan',
+                'students': 'Quản Lý Học Sinh',
+                'scores': 'Quản Lý Điểm Số',
+                'finance': 'Quản Lý Tài Chính',
+                'my-student': 'Thông Tin Con Tôi'
+            };
+
+            document.getElementById('page-title').textContent = pageTitles[currentPage] || 'Dashboard';
+            
+            if (pages[currentPage]) {
+                pages[currentPage]();
+            }
+        };
+
+        // DASHBOARD
+        window.renderDashboard = () => {
+            const students = window.localData.students || {};
+            const transactions = window.localData.transactions || {};
+            
+            const totalStudents = Object.keys(students).length;
+            const totalRevenue = Object.values(transactions).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            
+            let avgScore = 0;
+            let scoreCount = 0;
+            Object.values(students).forEach(s => {
+                ['math', 'literature', 'english', 'science'].forEach(subject => {
+                    if (s[subject] != null && s[subject] !== '') {
+                        avgScore += parseFloat(s[subject]);
+                        scoreCount++;
+                    }
+                });
+            });
+            avgScore = scoreCount > 0 ? (avgScore / scoreCount).toFixed(2) : 0;
+
+            const recentTransCount = Object.values(transactions).filter(t => {
+                const transDate = new Date(t.date);
+                const daysDiff = (Date.now() - transDate.getTime()) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 30;
+            }).length;
+
+            document.getElementById('content-area').innerHTML = `
+                <div class="grid-4">
+                    <div class="stat-card" style="border-left-color: var(--primary)">
+                        <div style="color:#64748b; font-size:0.9rem">Tổng Học Sinh</div>
+                        <div class="value">${totalStudents}</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--success)">
+                        <div style="color:#64748b; font-size:0.9rem">Điểm Trung Bình</div>
+                        <div class="value">${avgScore}</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--warning)">
+                        <div style="color:#64748b; font-size:0.9rem">Doanh Thu</div>
+                        <div class="value">${totalRevenue.toLocaleString('vi-VN')}đ</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--danger)">
+                        <div style="color:#64748b; font-size:0.9rem">Giao Dịch (30 ngày)</div>
+                        <div class="value">${recentTransCount}</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom:20px"><i class="fas fa-chart-area"></i> Biểu Đồ Thống Kê</h3>
+                    <canvas id="dashboardChart" style="max-height:300px"></canvas>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom:15px"><i class="fas fa-list"></i> Hoạt Động Gần Đây</h3>
+                    <div style="color:#64748b">
+                        <p style="padding:10px; background:#f8fafc; border-radius:6px; margin-bottom:8px">
+                            <i class="fas fa-user-plus"></i> Có ${totalStudents} học sinh trong hệ thống
+                        </p>
+                        <p style="padding:10px; background:#f8fafc; border-radius:6px; margin-bottom:8px">
+                            <i class="fas fa-dollar-sign"></i> ${recentTransCount} giao dịch trong tháng này
+                        </p>
+                        <p style="padding:10px; background:#f8fafc; border-radius:6px">
+                            <i class="fas fa-chart-line"></i> Điểm trung bình: ${avgScore}
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // Render chart
+            setTimeout(() => {
+                const ctx = document.getElementById('dashboardChart');
+                if (ctx && window.Chart) {
+                    const classData = {};
+                    Object.values(students).forEach(s => {
+                        if (!classData[s.class]) classData[s.class] = 0;
+                        classData[s.class]++;
+                    });
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(classData),
+                            datasets: [{
+                                label: 'Số học sinh',
+                                data: Object.values(classData),
+                                backgroundColor: 'rgba(37, 99, 235, 0.6)',
+                                borderColor: 'rgba(37, 99, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        };
+
+        // STUDENTS PAGE
+        window.renderStudents = () => {
+            const students = window.localData.students || {};
+            const isTeacher = window.userRole === 'teacher';
+            const teacherClass = window.teacherClass;
+
+            let filteredStudents = Object.entries(students);
+            
+            if (isTeacher && teacherClass) {
+                filteredStudents = filteredStudents.filter(([_, s]) => s.class === teacherClass);
+            }
+
+            const canEdit = window.userRole === 'admin';
+
+            document.getElementById('content-area').innerHTML = `
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <input type="text" id="search-input" class="form-control" 
+                               placeholder="Tìm kiếm học sinh..." 
+                               style="max-width:300px; width:100%"
+                               onkeyup="filterStudents()">
+                    </div>
+                    ${canEdit ? `
+                        <div class="toolbar-right">
+                            <button class="btn btn-success" onclick="openStudentModal()">
+                                <i class="fas fa-plus"></i> <span>Thêm mới</span>
+                            </button>
+                            <button class="btn btn-primary" onclick="importExcel()">
+                                <i class="fas fa-file-import"></i> <span>Import</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="exportExcel()">
+                                <i class="fas fa-file-export"></i> <span>Export</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="students-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã HS</th>
+                                <th>Họ và Tên</th>
+                                <th>Ngày Sinh</th>
+                                <th>Giới Tính</th>
+                                <th>Lớp</th>
+                                <th>Phụ Huynh</th>
+                                <th>SĐT</th>
+                                ${canEdit || isTeacher ? '<th>Thao Tác</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody id="students-tbody">
+                            ${filteredStudents.map(([id, s], idx) => `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td><span class="badge badge-info">${s.code}</span></td>
+                                    <td><strong>${s.name}</strong></td>
+                                    <td>${s.dob || '-'}</td>
+                                    <td>${s.gender || '-'}</td>
+                                    <td><span class="badge badge-success">${s.class}</span></td>
+                                    <td>${s.parent || '-'}</td>
+                                    <td>${s.phone || '-'}</td>
+                                    ${canEdit || isTeacher ? `
+                                        <td>
+                                            <div class="action-buttons">
+                                                ${canEdit ? `
+                                                    <button class="btn btn-primary btn-sm" onclick="editStudent('${id}')">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm" onclick="deleteStudent('${id}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                ` : ''}
+                                                ${isTeacher ? `
+                                                    <button class="btn btn-warning btn-sm" onclick="sendFeedback('${s.code}', '${s.name}')">
+                                                        <i class="fas fa-comment"></i>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                    ` : ''}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        window.filterStudents = () => {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#students-tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        };
+
+        window.openStudentModal = (studentId = null) => {
+            document.getElementById('modal-student-title').textContent = studentId ? 'Chỉnh Sửa Học Sinh' : 'Thêm Học Sinh Mới';
+            document.getElementById('studentForm').reset();
+            document.getElementById('student-id').value = studentId || '';
+
+            if (studentId) {
+                const student = window.localData.students[studentId];
+                if (student) {
+                    document.getElementById('student-code').value = student.code || '';
+                    document.getElementById('student-name').value = student.name || '';
+                    document.getElementById('student-dob').value = student.dob || '';
+                    document.getElementById('student-gender').value = student.gender || '';
+                    document.getElementById('student-class').value = student.class || '';
+                    document.getElementById('student-address').value = student.address || '';
+                    document.getElementById('student-parent').value = student.parent || '';
+                    document.getElementById('student-phone').value = student.phone || '';
+                    document.getElementById('student-email').value = student.email || '';
+                    document.getElementById('student-math').value = student.math || '';
+                    document.getElementById('student-literature').value = student.literature || '';
+                    document.getElementById('student-english').value = student.english || '';
+                    document.getElementById('student-science').value = student.science || '';
+                }
+            }
+
+            document.getElementById('studentModal').style.display = 'flex';
+        };
+
+        window.editStudent = (id) => {
+            openStudentModal(id);
+        };
+
+        window.saveStudent = async (event) => {
+            event.preventDefault();
+
+            const studentId = document.getElementById('student-id').value;
+            const studentData = {
+                code: document.getElementById('student-code').value.trim(),
+                name: document.getElementById('student-name').value.trim(),
+                dob: document.getElementById('student-dob').value,
+                gender: document.getElementById('student-gender').value,
+                class: document.getElementById('student-class').value.trim(),
+                address: document.getElementById('student-address').value.trim(),
+                parent: document.getElementById('student-parent').value.trim(),
+                phone: document.getElementById('student-phone').value.trim(),
+                email: document.getElementById('student-email').value.trim(),
+                math: document.getElementById('student-math').value,
+                literature: document.getElementById('student-literature').value,
+                english: document.getElementById('student-english').value,
+                science: document.getElementById('student-science').value,
+                updatedAt: Date.now()
+            };
+
+            try {
+                if (studentId) {
+                    await dbUpdate(dbRef(db, `students/${studentId}`), studentData);
+                    Swal.fire('Thành công!', 'Đã cập nhật thông tin học sinh', 'success');
+                } else {
+                    studentData.createdAt = Date.now();
+                    await dbPush(dbRef(db, 'students'), studentData);
+                    Swal.fire('Thành công!', 'Đã thêm học sinh mới', 'success');
+                }
+                closeModal('studentModal');
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        };
+
+        window.deleteStudent = async (id) => {
+            const result = await Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: 'Hành động này không thể hoàn tác!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    await dbRemove(dbRef(db, `students/${id}`));
+                    Swal.fire('Đã xóa!', 'Học sinh đã được xóa', 'success');
+                } catch (error) {
+                    Swal.fire('Lỗi', error.message, 'error');
+                }
+            }
+        };
+
+        window.importExcel = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx, .xls';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                        for (const row of jsonData) {
+                            const studentData = {
+                                code: row['Mã HS'] || '',
+                                name: row['Họ Tên'] || '',
+                                dob: row['Ngày Sinh'] || '',
+                                gender: row['Giới Tính'] || '',
+                                class: row['Lớp'] || '',
+                                address: row['Địa Chỉ'] || '',
+                                parent: row['Phụ Huynh'] || '',
+                                phone: row['SĐT'] || '',
+                                email: row['Email'] || '',
+                                math: row['Toán'] || '',
+                                literature: row['Văn'] || '',
+                                english: row['Anh'] || '',
+                                science: row['Khoa Học'] || '',
+                                createdAt: Date.now()
+                            };
+                            await dbPush(dbRef(db, 'students'), studentData);
+                        }
+
+                        Swal.fire('Thành công!', `Đã import ${jsonData.length} học sinh`, 'success');
+                    } catch (error) {
+                        Swal.fire('Lỗi', 'Không thể đọc file Excel', 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+            input.click();
+        };
+
+        window.exportExcel = () => {
+            const students = window.localData.students || {};
+            const data = Object.values(students).map(s => ({
+                'Mã HS': s.code,
+                'Họ Tên': s.name,
+                'Ngày Sinh': s.dob,
+                'Giới Tính': s.gender,
+                'Lớp': s.class,
+                'Địa Chỉ': s.address,
+                'Phụ Huynh': s.parent,
+                'SĐT': s.phone,
+                'Email': s.email,
+                'Toán': s.math,
+                'Văn': s.literature,
+                'Anh': s.english,
+                'Khoa Học': s.science
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Students');
+            XLSX.writeFile(wb, 'danh_sach_hoc_sinh.xlsx');
+        };
+
+        // SCORES PAGE
+        window.renderScores = () => {
+            const students = window.localData.students || {};
+            const isTeacher = window.userRole === 'teacher';
+            const teacherClass = window.teacherClass;
+
+            let filteredStudents = Object.entries(students);
+            
+            if (isTeacher && teacherClass) {
+                filteredStudents = filteredStudents.filter(([_, s]) => s.class === teacherClass);
+            }
+
+            document.getElementById('content-area').innerHTML = `
+                <div class="card">
+                    <h3 style="margin-bottom:20px"><i class="fas fa-chart-bar"></i> Bảng Điểm</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Mã HS</th>
+                                    <th>Họ và Tên</th>
+                                    <th>Lớp</th>
+                                    <th>Toán</th>
+                                    <th>Văn</th>
+                                    <th>Anh</th>
+                                    <th>Khoa Học</th>
+                                    <th>TB</th>
+                                    <th>Xếp Loại</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filteredStudents.map(([id, s], idx) => {
+                                    const scores = [
+                                        parseFloat(s.math) || 0,
+                                        parseFloat(s.literature) || 0,
+                                        parseFloat(s.english) || 0,
+                                        parseFloat(s.science) || 0
+                                    ].filter(score => score > 0);
+                                    
+                                    const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0;
+                                    
+                                    let rank = 'Chưa đánh giá';
+                                    let rankClass = 'badge-info';
+                                    if (avg >= 8) { rank = 'Giỏi'; rankClass = 'badge-success'; }
+                                    else if (avg >= 6.5) { rank = 'Khá'; rankClass = 'badge-info'; }
+                                    else if (avg >= 5) { rank = 'Trung Bình'; rankClass = 'badge-warning'; }
+                                    else if (avg > 0) { rank = 'Yếu'; rankClass = 'badge-danger'; }
+
+                                    return `
+                                        <tr>
+                                            <td>${idx + 1}</td>
+                                            <td><span class="badge badge-info">${s.code}</span></td>
+                                            <td><strong>${s.name}</strong></td>
+                                            <td><span class="badge badge-success">${s.class}</span></td>
+                                            <td>${s.math || '-'}</td>
+                                            <td>${s.literature || '-'}</td>
+                                            <td>${s.english || '-'}</td>
+                                            <td>${s.science || '-'}</td>
+                                            <td><strong>${avg}</strong></td>
+                                            <td><span class="badge ${rankClass}">${rank}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        };
+
+        // FINANCE PAGE
+        window.renderFinance = () => {
+            const transactions = window.localData.transactions || {};
+            const students = window.localData.students || {};
+
+            const totalRevenue = Object.values(transactions).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            const transCount = Object.keys(transactions).length;
+
+            document.getElementById('content-area').innerHTML = `
+                <div class="grid-3">
+                    <div class="stat-card" style="border-left-color: var(--success)">
+                        <div style="color:#64748b; font-size:0.9rem">Tổng Doanh Thu</div>
+                        <div class="value">${totalRevenue.toLocaleString('vi-VN')}đ</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--primary)">
+                        <div style="color:#64748b; font-size:0.9rem">Số Giao Dịch</div>
+                        <div class="value">${transCount}</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--warning)">
+                        <div style="color:#64748b; font-size:0.9rem">Trung Bình/GD</div>
+                        <div class="value">${transCount > 0 ? (totalRevenue / transCount).toLocaleString('vi-VN') : 0}đ</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="toolbar">
+                        <h3 style="margin:0"><i class="fas fa-dollar-sign"></i> Danh Sách Giao Dịch</h3>
+                        <button class="btn btn-success" onclick="openTransactionModal()">
+                            <i class="fas fa-plus"></i> Thêm Giao Dịch
+                        </button>
+                    </div>
+
+                    <div class="table-wrapper" style="margin-top:20px">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Học Sinh</th>
+                                    <th>Loại</th>
+                                    <th>Số Tiền</th>
+                                    <th>Ngày</th>
+                                    <th>Ghi Chú</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(transactions).map(([id, t], idx) => {
+                                    const student = Object.values(students).find(s => s.code === t.studentCode);
+                                    const typeLabels = {
+                                        'tuition': 'Học phí',
+                                        'uniform': 'Đồng phục',
+                                        'books': 'Sách vở',
+                                        'activities': 'Ngoại khóa',
+                                        'other': 'Khác'
+                                    };
+                                    
+                                    return `
+                                        <tr>
+                                            <td>${idx + 1}</td>
+                                            <td><strong>${student ? student.name : t.studentCode}</strong></td>
+                                            <td><span class="badge badge-info">${typeLabels[t.type] || t.type}</span></td>
+                                            <td><strong style="color:var(--success)">${parseFloat(t.amount).toLocaleString('vi-VN')}đ</strong></td>
+                                            <td>${t.date}</td>
+                                            <td>${t.note || '-'}</td>
+                                            <td>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction('${id}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.openTransactionModal = () => {
+            document.getElementById('transactionForm').reset();
+            
+            const students = window.localData.students || {};
+            const studentOptions = Object.values(students).map(s => 
+                `<option value="${s.code}">${s.name} (${s.code})</option>`
+            ).join('');
+            
+            document.getElementById('trans-student').innerHTML = 
+                '<option value="">-- Chọn học sinh --</option>' + studentOptions;
+            
+            document.getElementById('trans-date').valueAsDate = new Date();
+            document.getElementById('transactionModal').style.display = 'flex';
+        };
+
+        window.saveTransaction = async (event) => {
+            event.preventDefault();
+
+            const transData = {
+                studentCode: document.getElementById('trans-student').value,
+                type: document.getElementById('trans-type').value,
+                amount: document.getElementById('trans-amount').value,
+                date: document.getElementById('trans-date').value,
+                note: document.getElementById('trans-note').value.trim(),
+                createdAt: Date.now()
+            };
+
+            try {
+                await dbPush(dbRef(db, 'transactions'), transData);
+                Swal.fire('Thành công!', 'Đã thêm giao dịch mới', 'success');
+                closeModal('transactionModal');
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        };
+
+        window.deleteTransaction = async (id) => {
+            const result = await Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: 'Hành động này không thể hoàn tác!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    await dbRemove(dbRef(db, `transactions/${id}`));
+                    Swal.fire('Đã xóa!', 'Giao dịch đã được xóa', 'success');
+                } catch (error) {
+                    Swal.fire('Lỗi', error.message, 'error');
+                }
+            }
+        };
+
+        // MY STUDENT PAGE (for parents)
+        window.renderMyStudent = () => {
+            const studentCode = window.studentCode;
+            const students = window.localData.students || {};
+            const transactions = window.localData.transactions || {};
+            const feedbacks = window.localData.feedback || {};
+
+            let myStudent = null;
+            let studentKey = null;
+            
+            for (let key in students) {
+                if (students[key].code === studentCode) {
+                    myStudent = students[key];
+                    studentKey = key;
+                    break;
+                }
+            }
+
+            if (!myStudent) {
+                document.getElementById('content-area').innerHTML = `
+                    <div class="card">
+                        <h3 style="color:var(--danger)"><i class="fas fa-exclamation-triangle"></i> Không tìm thấy thông tin học sinh</h3>
+                        <p>Mã học sinh: <strong>${studentCode}</strong></p>
+                        <p style="color:#64748b">Vui lòng liên hệ nhà trường để kiểm tra lại mã học sinh.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const scores = [
+                parseFloat(myStudent.math) || 0,
+                parseFloat(myStudent.literature) || 0,
+                parseFloat(myStudent.english) || 0,
+                parseFloat(myStudent.science) || 0
+            ].filter(score => score > 0);
+            
+            const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0;
+
+            const studentTransactions = Object.values(transactions).filter(t => t.studentCode === studentCode);
+            const totalPaid = studentTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            const tuitionFee = 5000000; // Example tuition fee
+            const isPaid = totalPaid >= tuitionFee;
+
+            const studentFeedbacks = studentKey && feedbacks[studentKey] ? Object.values(feedbacks[studentKey]) : [];
+
+            document.getElementById('content-area').innerHTML = `
+                <div class="card">
+                    <h3 style="margin-bottom:20px"><i class="fas fa-user-graduate"></i> Thông Tin Học Sinh</h3>
+                    <div class="grid-3">
+                        <div>
+                            <p><strong>Mã học sinh:</strong> <span class="badge badge-info">${myStudent.code}</span></p>
+                            <p><strong>Họ và tên:</strong> ${myStudent.name}</p>
+                            <p><strong>Ngày sinh:</strong> ${myStudent.dob || '-'}</p>
+                        </div>
+                        <div>
+                            <p><strong>Giới tính:</strong> ${myStudent.gender || '-'}</p>
+                            <p><strong>Lớp:</strong> <span class="badge badge-success">${myStudent.class}</span></p>
+                            <p><strong>Địa chỉ:</strong> ${myStudent.address || '-'}</p>
+                        </div>
+                        <div>
+                            <p><strong>Phụ huynh:</strong> ${myStudent.parent || '-'}</p>
+                            <p><strong>SĐT:</strong> ${myStudent.phone || '-'}</p>
+                            <p><strong>Email:</strong> ${myStudent.email || '-'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom:20px"><i class="fas fa-chart-bar"></i> Kết Quả Học Tập</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Môn Học</th>
+                                    <th>Điểm</th>
+                                    <th>Đánh Giá</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${[
+                                    { name: 'Toán', score: myStudent.math },
+                                    { name: 'Văn', score: myStudent.literature },
+                                    { name: 'Anh', score: myStudent.english },
+                                    { name: 'Khoa Học', score: myStudent.science }
+                                ].map(subject => {
+                                    const score = parseFloat(subject.score) || 0;
+                                    let rating = '-';
+                                    let ratingClass = 'badge-info';
+                                    
+                                    if (score >= 8) { rating = 'Giỏi'; ratingClass = 'badge-success'; }
+                                    else if (score >= 6.5) { rating = 'Khá'; ratingClass = 'badge-info'; }
+                                    else if (score >= 5) { rating = 'Trung Bình'; ratingClass = 'badge-warning'; }
+                                    else if (score > 0) { rating = 'Yếu'; ratingClass = 'badge-danger'; }
+                                    
+                                    return `
+                                        <tr>
+                                            <td><strong>${subject.name}</strong></td>
+                                            <td><strong style="font-size:1.2rem; color:var(--primary)">${score || '-'}</strong></td>
+                                            <td><span class="badge ${ratingClass}">${rating}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr style="background:#f8fafc; font-weight:bold">
+                                    <td>Điểm Trung Bình</td>
+                                    <td><strong style="font-size:1.3rem; color:var(--success)">${avg}</strong></td>
+                                    <td>
+                                        ${avg >= 8 ? '<span class="badge badge-success">Học Sinh Giỏi</span>' : 
+                                          avg >= 6.5 ? '<span class="badge badge-info">Học Sinh Khá</span>' :
+                                          avg >= 5 ? '<span class="badge badge-warning">Học Sinh Trung Bình</span>' :
+                                          avg > 0 ? '<span class="badge badge-danger">Cần Cố Gắng</span>' : '-'}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-dollar-sign"></i> Tình Hình Tài Chính</h3>
+                    ${studentTransactions.length > 0 ? `
+                        <div class="table-wrapper" style="margin-top:15px">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>Loại</th>
+                                        <th>Số Tiền</th>
+                                        <th>Ghi Chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${studentTransactions.map(t => {
+                                        const typeLabels = {
+                                            'tuition': 'Học phí',
+                                            'uniform': 'Đồng phục',
+                                            'books': 'Sách vở',
+                                            'activities': 'Ngoại khóa',
+                                            'other': 'Khác'
+                                        };
+                                        return `
+                                            <tr>
+                                                <td>${t.date}</td>
+                                                <td><span class="badge badge-info">${typeLabels[t.type] || t.type}</span></td>
+                                                <td><strong style="color:var(--success)">${parseFloat(t.amount).toLocaleString('vi-VN')}đ</strong></td>
+                                                <td>${t.note || '-'}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                    <tr style="background:#f8fafc; font-weight:bold">
+                                        <td colspan="2">Tổng Đã Đóng</td>
+                                        <td colspan="2"><strong style="color:var(--success); font-size:1.1rem">${totalPaid.toLocaleString('vi-VN')}đ</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="margin-top:15px">
+                            <span class="badge ${isPaid ? 'badge-success' : 'badge-warning'}" style="font-size:1rem; padding:8px 16px">
+                                ${isPaid ? '<i class="fas fa-check-circle"></i> Đã đóng đủ học phí' : '<i class="fas fa-clock"></i> Chưa đóng đủ học phí'}
+                            </span>
+                        </div>
+                    ` : '<p style="color:#94a3b8; margin-top:15px">Chưa có giao dịch tài chính nào</p>'}
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-comments"></i> Phản Hồi Từ Giáo Viên</h3>
+                    ${studentFeedbacks.length > 0 ? `
+                        <div style="margin-top:15px">
+                            ${studentFeedbacks.map(fb => `
+                                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px; border-left:4px solid var(--primary)">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:10px">
+                                        <div>
+                                            <strong style="color:var(--primary)">${fb.teacherName || 'Giáo viên'}</strong>
+                                            <span style="color:#94a3b8; margin-left:10px; font-size:0.9rem">
+                                                ${fb.teacherClass ? `Lớp ${fb.teacherClass}` : ''}
+                                            </span>
+                                        </div>
+                                        <span style="color:#94a3b8; font-size:0.85rem">
+                                            ${new Date(fb.createdAt).toLocaleString('vi-VN')}
+                                        </span>
+                                    </div>
+                                    <div style="color:#334155">${fb.message}</div>
+                                    ${fb.category ? `<div style="margin-top:8px"><span class="badge badge-info">${fb.category}</span></div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p style="color:#94a3b8; margin-top:15px">Chưa có phản hồi nào từ giáo viên</p>'}
+                </div>
+            `;
+        };
+
+        // TEACHER - SEND FEEDBACK
+        window.sendFeedback = async (studentCode, studentName) => {
+            const result = await Swal.fire({
+                title: `Gửi phản hồi cho: ${studentName}`,
+                html: `
+                    <div style="text-align:left; margin-top:15px">
+                        <label style="font-weight:600; margin-bottom:5px; display:block">Loại phản hồi:</label>
+                        <select id="feedback-category" class="form-control" style="margin-bottom:15px">
+                            <option value="học tập">Học tập</option>
+                            <option value="kỷ luật">Kỷ luật</option>
+                            <option value="sức khỏe">Sức khỏe</option>
+                            <option value="hoạt động">Hoạt động</option>
+                            <option value="khen ngợi">Khen ngợi</option>
+                            <option value="khác">Khác</option>
+                        </select>
+                        
+                        <label style="font-weight:600; margin-bottom:5px; display:block">Nội dung:</label>
+                        <textarea id="feedback-message" class="form-control" rows="5" 
+                                  placeholder="Nhập nội dung phản hồi..."></textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy',
+                width: '90%',
+                maxWidth: 600,
+                preConfirm: () => {
+                    const category = document.getElementById('feedback-category').value;
+                    const message = document.getElementById('feedback-message').value;
+                    
+                    if (!message.trim()) {
+                        Swal.showValidationMessage('Vui lòng nhập nội dung phản hồi');
+                        return false;
+                    }
+                    
+                    return { category, message };
+                }
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    let studentKey = null;
+                    for (let key in window.localData.students) {
+                        const s = window.localData.students[key];
+                        if (s.code === studentCode || s.id === studentCode || key === studentCode) {
+                            studentKey = key;
+                            break;
+                        }
+                    }
+                    
+                    if (!studentKey) {
+                        studentKey = studentCode;
+                    }
+                    
+                    const feedbackData = {
+                        studentCode: studentCode,
+                        studentName: studentName,
+                        category: result.value.category,
+                        message: result.value.message,
+                        teacherName: window.currentUser.email,
+                        teacherClass: window.teacherClass,
+                        createdAt: Date.now()
+                    };
+
+                    await dbPush(dbRef(db, `feedback/${studentKey}`), feedbackData);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã gửi phản hồi!',
+                        text: 'Phụ huynh sẽ nhìn thấy phản hồi của bạn.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } catch (error) {
+                    Swal.fire('Lỗi', error.message, 'error');
+                }
+            }
+        }
+
+        // MODAL
+        window.closeModal = (id) => {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
